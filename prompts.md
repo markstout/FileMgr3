@@ -25,4 +25,8 @@
 * Show some indicator which is the active pane.
 * For Detail view, use the fields in the current Field Profile
 ===============================================================================
+
 *Note : It created the fields dialog based on previous code.*
+
+Left off here 2025-09-09 17:09:19 472 lines of code
+
