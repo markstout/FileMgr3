@@ -1,16 +1,28 @@
-Use PyQt so we can have drag and drop to another application
-Name it File Manager Vibe Again
-Resizable window
-File, Edit and View menus
-Starts in center of screen
-The option to have 1,2,3, or 4 windows
-Options for layout of the up to 4 windows and a 5th pane for bookmarks.
-For 4 windows : 2 top & bottom on left, 2 top and bottom for right
-For 4 windows, 4 vertical
-For 3 windows, 2 top & bottom left, one vertical on right
-For 3 windows 2 top and bottom right, one vertical on left
-For 2 windows, 2 vertical panes
-also for 2 windows, 2 vertical with a properties pane between them.
-For 1 window, 1 vertical
-The application window must remain constant when changing number or layout of views
-Also under the View menu, Narrow (showing only filename), Detailed (showing filename, date modified and size), and Images (3 tiles per line in pane displaying the image if the file is a displayable image)
+* Use PyQt so we can have drag and drop to another application
+* Name it File Manager Vibe Again
+* Resizable window
+* File, Edit and View menus
+* Starts in center of screen
+* The option to have 1,2,3, or 4 windows
+* Options for layout of the up to 4 windows and a 5th pane for bookmarks.
+* For 4 windows : 2 top & bottom on left, 2 top and bottom for right
+* For 4 windows, 4 vertical
+* For 3 windows, 2 top & bottom left, one vertical on right
+* For 3 windows 2 top and bottom right, one vertical on left
+* For 2 windows, 2 vertical panes
+* also for 2 windows, 2 vertical with a properties pane between them.
+* For 1 window, 1 vertical
+* The application window must remain constant when changing number or layout of views
+* Also under the View menu, Narrow (showing only filename), Detailed (showing filename, date modified and size), and Images (3 tiles per line in pane displaying the image if the file is a displayable image)
+
+* Undo/Redo
+* Edit menu with undo/redo
+* Add a menu item, Fields to View menu. Have a dialog box with a panel on left listing all the explorer fields grouped by type (general, image, audio, video).  Have a middle panel “Display” and a right hand one “Properties”  You can drag & drop from left to both middle and right.  Below panel 2 & 3, is a delete button.  Below that center, is a drop down labeled Profile. It is populated with “Default” and “Add New” Add new invokes a dialog box asking for the name of the Profile.
+
+* for now, hard code the files for each pane to "C:\Users\marks\OneDrive\Pictures" and display those file depending on what view is set.
+
+  * Changing a view should only affect the active pane.
+  * Show some indicator which is the active pane.
+  * For Detail view, use the fields in the current Field Profile
+
+**Note : It created the fields dialog based on previous code.**
