@@ -25,8 +25,20 @@
 * Show some indicator which is the active pane.
 * For Detail view, use the fields in the current Field Profile
 ===============================================================================
-
 *Note : It created the fields dialog based on previous code.*
 
 Left off here 2025-09-09 17:09:19 472 lines of code
+===============================================================================
+* Drag and drop between windows
+* Drag and Drop to another application like Gmail
+===============================================================================
+**Left off here 2025-09-09 21:50:48 425 lines -- Need to test and refne Drag & Drop**
+===============================================================================
+* right click menu options for when clicking on file or folder : rename, copy path to clipboard, Edit in notepad.exe, delete
+===============================================================================
+* Make a field showing path to current folder and make its path elements clickable for navigation.
+* For example, if the path is C:\Program Files\Core Temp\Languages, clicking on Program Files should take me to the program Files folder.
+   Make the drive from the last iteration a drop down box listing all the available drives
+* if you click the right end of the field, it clears and you can type in a path of your own
+
 
