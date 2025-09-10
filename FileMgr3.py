@@ -2,7 +2,6 @@ import sys
 import os
 import shutil
 import subprocess
-import json
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QSplitter, QMenuBar, QMenu, QLabel, QStyle, QDialog, QTreeView,
@@ -20,35 +19,25 @@ from PyQt6.QtCore import Qt, QSize, QMimeData, QDir, pyqtSignal, QThread, QObjec
 APP_AUTHOR = "Mark Stout"
 APP_NAMESHORT = "File Manager Vibe"
 
-# --- Background Worker for Image Loading ---
+# --- Background Worker & Custom Dialogs (Unchanged, collapsed for brevity) ---
 class ImageLoader(QObject):
-    """Worker object that loads images in a separate thread."""
-    image_loaded = pyqtSignal(str, QIcon) # Signal to emit when an image is ready
+    image_loaded = pyqtSignal(str, QIcon)
     finished = pyqtSignal()
-
     def __init__(self, path):
         super().__init__()
         self.path = path
         self.image_extensions = ['.png', '.jpg', '.jpeg', '.bmp', '.gif']
         self._is_running = True
-
     def run(self):
-        """Load images from the specified path."""
         if os.path.exists(self.path):
             for file_name in os.listdir(self.path):
-                if not self._is_running:
-                    break
+                if not self._is_running: break
                 if any(file_name.lower().endswith(ext) for ext in self.image_extensions):
                     full_path = os.path.join(self.path, file_name)
                     icon = QIcon(full_path)
-                    if not icon.isNull():
-                        self.image_loaded.emit(file_name, icon)
+                    if not icon.isNull(): self.image_loaded.emit(file_name, icon)
         self.finished.emit()
-
-    def stop(self):
-        self._is_running = False
-
-# --- Custom Dialogs (Unchanged, collapsed for brevity) ---
+    def stop(self): self._is_running = False
 class DragTextStandardItemModel(QStandardItemModel):
     def mimeData(self, indexes):
         mime_data = QMimeData()
@@ -222,144 +211,154 @@ class FieldsDialog(QDialog):
 class DnDTreeView(QTreeView):
     focus_gained = pyqtSignal()
     def __init__(self, parent_pane, parent=None):
-        super().__init__(parent); self.parent_pane = parent_pane; self.setDragEnabled(True); self.setAcceptDrops(True)
-        self.setDropIndicatorShown(True); self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
-    def focusInEvent(self, event): self.focus_gained.emit(); super().focusInEvent(event)
+        super().__init__(parent)
+        self.parent_pane = parent_pane
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+
+    def focusInEvent(self, event):
+        self.focus_gained.emit()
+        super().focusInEvent(event)
+
     def startDrag(self, supportedActions):
         indexes = self.selectedIndexes()
         if not indexes: return
-        mime_data = QMimeData(); urls = [self.model().filePath(index) for index in indexes if index.column() == 0]
+        mime_data = QMimeData()
+        urls = [self.model().filePath(index) for index in indexes if index.column() == 0]
         mime_data.setUrls([QUrl.fromLocalFile(path) for path in set(urls)])
-        drag = QDrag(self); drag.setMimeData(mime_data)
+        drag = QDrag(self)
+        drag.setMimeData(mime_data)
         drag.exec(Qt.DropAction.CopyAction | Qt.DropAction.MoveAction)
+
     def dragEnterEvent(self, event):
-        if event.mimeData().hasUrls(): event.acceptProposedAction()
-        else: super().dragEnterEvent(event)
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            super().dragEnterEvent(event)
+
     def dropEvent(self, event):
         if event.mimeData().hasUrls():
-            menu = QMenu(self); copy_action = menu.addAction("Copy Here"); move_action = menu.addAction("Move Here")
-            menu.addSeparator(); cancel_action = menu.addAction("Cancel")
+            menu = QMenu(self)
+            copy_action = menu.addAction("Copy Here")
+            move_action = menu.addAction("Move Here")
+            menu.addSeparator()
+            cancel_action = menu.addAction("Cancel")
+            
             selected_action = menu.exec(event.globalPosition().toPoint())
-            if selected_action == copy_action: self.parent_pane._perform_file_operation(event.mimeData().urls(), "copy"); event.acceptProposedAction()
-            elif selected_action == move_action: self.parent_pane._perform_file_operation(event.mimeData().urls(), "move"); event.acceptProposedAction()
-            else: event.ignore()
-        else: super().dropEvent(event)
+            
+            if selected_action == copy_action:
+                self.parent_pane._perform_file_operation(event.mimeData().urls(), "copy")
+                event.acceptProposedAction()
+            elif selected_action == move_action:
+                self.parent_pane._perform_file_operation(event.mimeData().urls(), "move")
+                event.acceptProposedAction()
+            else:
+                event.ignore()
+        else:
+            super().dropEvent(event)
 
 class DnDListWidget(QListWidget):
     focus_gained = pyqtSignal()
     def __init__(self, parent_pane, parent=None):
-        super().__init__(parent); self.parent_pane = parent_pane; self.setDragEnabled(True); self.setAcceptDrops(True)
+        super().__init__(parent)
+        self.parent_pane = parent_pane
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
         self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
-    def focusInEvent(self, event): self.focus_gained.emit(); super().focusInEvent(event)
+
+    def focusInEvent(self, event):
+        self.focus_gained.emit()
+        super().focusInEvent(event)
+
     def startDrag(self, supportedActions):
-        items = self.selectedItems();
+        items = self.selectedItems()
         if not items: return
-        mime_data = QMimeData(); urls = [item.data(Qt.ItemDataRole.UserRole) for item in items if item.data(Qt.ItemDataRole.UserRole)]
-        mime_data.setUrls([QUrl.fromLocalFile(path) for path in urls]); drag = QDrag(self); drag.setMimeData(mime_data)
+        
+        mime_data = QMimeData()
+        urls = [item.data(Qt.ItemDataRole.UserRole) for item in items if item.data(Qt.ItemDataRole.UserRole)]
+        mime_data.setUrls([QUrl.fromLocalFile(path) for path in urls])
+
+        drag = QDrag(self)
+        drag.setMimeData(mime_data)
         drag.exec(Qt.DropAction.CopyAction | Qt.DropAction.MoveAction)
+
     def dragEnterEvent(self, event):
-        if event.mimeData().hasUrls(): event.acceptProposedAction()
-        else: super().dragEnterEvent(event)
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            super().dragEnterEvent(event)
+    
     def dropEvent(self, event):
         if event.mimeData().hasUrls():
-            menu = QMenu(self); copy_action = menu.addAction("Copy Here"); move_action = menu.addAction("Move Here")
-            menu.addSeparator(); cancel_action = menu.addAction("Cancel")
+            menu = QMenu(self)
+            copy_action = menu.addAction("Copy Here")
+            move_action = menu.addAction("Move Here")
+            menu.addSeparator()
+            cancel_action = menu.addAction("Cancel")
+
             selected_action = menu.exec(event.globalPosition().toPoint())
-            if selected_action == copy_action: self.parent_pane._perform_file_operation(event.mimeData().urls(), "copy"); event.acceptProposedAction()
-            elif selected_action == move_action: self.parent_pane._perform_file_operation(event.mimeData().urls(), "move"); event.acceptProposedAction()
-            else: event.ignore()
-        else: super().dropEvent(event)
+            
+            if selected_action == copy_action:
+                self.parent_pane._perform_file_operation(event.mimeData().urls(), "copy")
+                event.acceptProposedAction()
+            elif selected_action == move_action:
+                self.parent_pane._perform_file_operation(event.mimeData().urls(), "move")
+                event.acceptProposedAction()
+            else:
+                event.ignore()
+        else:
+            super().dropEvent(event)
 
 # --- Functional File Pane ---
 class FilePane(QWidget):
     focus_gained = pyqtSignal(QWidget)
     def __init__(self, main_window, parent=None):
         super().__init__(parent)
-        self.main_window = main_window
-        self.active_profile_name = "Default Files"
-        self.setMinimumSize(200, 200)
-        self.path = "" # Path will be set by navigate_to
-        self.image_loader_thread = None
-        self.image_loader = None
-        self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(2, 2, 2, 2)
-        
-        header_widget = QWidget()
-        header_layout = QHBoxLayout(header_widget)
-        header_layout.setContentsMargins(5, 2, 5, 2)
-        self.folder_label = QLabel()
-        self.profile_combo = QComboBox()
-        self.update_profiles()
-        header_layout.addWidget(self.folder_label)
-        header_layout.addStretch()
-        header_layout.addWidget(QLabel("Profile:"))
-        header_layout.addWidget(self.profile_combo)
-        
-        self.stacked_widget = QStackedWidget()
-        self.model = QFileSystemModel()
+        self.main_window = main_window; self.active_profile_name = "Default Files"
+        self.setMinimumSize(200, 200); self.path = ""; self.image_loader_thread = None; self.image_loader = None
+        self.main_layout = QVBoxLayout(self); self.main_layout.setContentsMargins(2, 2, 2, 2)
+        header_widget = QWidget(); header_layout = QHBoxLayout(header_widget); header_layout.setContentsMargins(5, 2, 5, 2)
+        self.folder_label = QLabel(); self.profile_combo = QComboBox(); self.update_profiles()
+        header_layout.addWidget(self.folder_label); header_layout.addStretch()
+        header_layout.addWidget(QLabel("Profile:")); header_layout.addWidget(self.profile_combo)
+        self.stacked_widget = QStackedWidget(); self.model = QFileSystemModel()
         self.model.setFilter(QDir.Filter.NoDotAndDotDot | QDir.Filter.Files | QDir.Filter.AllDirs)
-
-        self.tree_view = DnDTreeView(parent_pane=self)
-        self.tree_view.setModel(self.model)
-        self.tree_view.setSortingEnabled(True)
-        self.tree_view.header().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        
-        self.image_view = DnDListWidget(parent_pane=self)
-        self.image_view.setViewMode(QListWidget.ViewMode.IconMode)
-        self.image_view.setIconSize(QSize(128, 128))
-        self.image_view.setResizeMode(QListWidget.ResizeMode.Adjust)
+        self.tree_view = DnDTreeView(parent_pane=self); self.tree_view.setModel(self.model)
+        self.tree_view.setSortingEnabled(True); self.tree_view.header().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self.image_view = DnDListWidget(parent_pane=self); self.image_view.setViewMode(QListWidget.ViewMode.IconMode)
+        self.image_view.setIconSize(QSize(128, 128)); self.image_view.setResizeMode(QListWidget.ResizeMode.Adjust)
         self.image_view.setGridSize(QSize(150, 150))
-        
-        self.stacked_widget.addWidget(self.tree_view)
-        self.stacked_widget.addWidget(self.image_view)
-        self.main_layout.addWidget(header_widget)
-        self.main_layout.addWidget(self.stacked_widget)
-        
+        self.stacked_widget.addWidget(self.tree_view); self.stacked_widget.addWidget(self.image_view)
+        self.main_layout.addWidget(header_widget); self.main_layout.addWidget(self.stacked_widget)
         self.tree_view.focus_gained.connect(lambda: self.focus_gained.emit(self))
         self.image_view.focus_gained.connect(lambda: self.focus_gained.emit(self))
         self.profile_combo.currentTextChanged.connect(self._on_profile_changed)
-
     def navigate_to(self, path):
         self.path = path
         self.folder_label.setText(os.path.basename(path) if os.path.basename(path) else path)
         self.model.setRootPath(path)
         self.tree_view.setRootIndex(self.model.index(path))
         self._populate_image_view()
-
     def update_profiles(self):
         self.profile_combo.blockSignals(True); self.profile_combo.clear(); self.profile_combo.addItem("Default Files")
         self.profile_combo.addItems(sorted(self.main_window.field_profiles.keys())); self.profile_combo.blockSignals(False)
-    
     def _on_profile_changed(self, profile_name):
         if not profile_name: return
         self.active_profile_name = profile_name
-        if self.stacked_widget.currentWidget() == self.tree_view and not self.tree_view.isHeaderHidden():
-            self.apply_view_mode("detailed")
-            
+        if self.stacked_widget.currentWidget() == self.tree_view and not self.tree_view.isHeaderHidden(): self.apply_view_mode("detailed")
     def _populate_image_view(self):
-        # Stop previous loader if it's running
         if self.image_loader and self.image_loader_thread.isRunning():
-            self.image_loader.stop()
-            self.image_loader_thread.quit()
-            self.image_loader_thread.wait()
-
-        self.image_view.clear()
-        self.image_loader_thread = QThread()
-        self.image_loader = ImageLoader(self.path)
+            self.image_loader.stop(); self.image_loader_thread.quit(); self.image_loader_thread.wait()
+        self.image_view.clear(); self.image_loader_thread = QThread(); self.image_loader = ImageLoader(self.path)
         self.image_loader.moveToThread(self.image_loader_thread)
-        self.image_loader.image_loaded.connect(self._add_image_item)
-        self.image_loader_thread.started.connect(self.image_loader.run)
+        self.image_loader.image_loaded.connect(self._add_image_item); self.image_loader_thread.started.connect(self.image_loader.run)
         self.image_loader.finished.connect(self.image_loader_thread.quit)
-        # The thread and worker will be cleaned up by Python's garbage collector
         self.image_loader_thread.start()
-
     def _add_image_item(self, name, icon):
-        """Slot to add an item to the image view from the background thread."""
-        item = QListWidgetItem(icon, name)
-        full_path = os.path.join(self.path, name)
-        item.setData(Qt.ItemDataRole.UserRole, full_path)
-        self.image_view.addItem(item)
-    
+        item = QListWidgetItem(icon, name); full_path = os.path.join(self.path, name)
+        item.setData(Qt.ItemDataRole.UserRole, full_path); self.image_view.addItem(item)
     def _perform_file_operation(self, urls, operation_type):
         for url in urls:
             source_path = url.toLocalFile()
@@ -367,32 +366,24 @@ class FilePane(QWidget):
                 try:
                     if operation_type == "copy": shutil.copy(source_path, self.path)
                     elif operation_type == "move": shutil.move(source_path, self.path)
-                except Exception as e:
-                    QMessageBox.critical(self, f"{operation_type.capitalize()} Error", f"Could not {operation_type} item:\n{e}")
-    
+                except Exception as e: QMessageBox.critical(self, f"{operation_type.capitalize()} Error", f"Could not {operation_type} item:\n{e}")
     def apply_view_mode(self, mode):
         header = self.tree_view.header()
         if mode == "narrow":
             self.stacked_widget.setCurrentWidget(self.tree_view); self.tree_view.setHeaderHidden(True)
             for i in range(1, self.model.columnCount()): header.hideSection(i)
-        
         elif mode == "detailed":
             self.stacked_widget.setCurrentWidget(self.tree_view); self.tree_view.setHeaderHidden(False)
-            if self.active_profile_name == "Default Files":
-                display_fields = ["Name", "Size", "Type", "Date Modified"]
+            if self.active_profile_name == "Default Files": display_fields = ["Name", "Size", "Type", "Date Modified"]
             else:
                 profile_data = self.main_window.field_profiles.get(self.active_profile_name, {})
                 display_fields = profile_data.get("display", [])
-            
             if not display_fields: display_fields = ["Name"]
-
             column_map = {"Name": 0, "Size": 1, "Type": 2, "Date Modified": 3}
             for i in range(self.model.columnCount()): header.hideSection(i)
             for field in display_fields:
                 if field in column_map: header.showSection(column_map[field])
-
-        elif mode == "images":
-            self.stacked_widget.setCurrentWidget(self.image_view)
+        elif mode == "images": self.stacked_widget.setCurrentWidget(self.image_view)
 
 # --- Other Panes and Main Window ---
 class PropertiesPane(QWidget):
@@ -420,7 +411,7 @@ class FileManagerVibeAgain(QMainWindow):
         settings.setValue("geometry", self.saveGeometry())
         settings.setValue("layout_id", self.current_layout_id)
         settings.setValue("pane_paths", [pane.path for pane in self.panes])
-        settings.setValue("bookmarks", {}) # Placeholder for bookmarks
+        settings.setValue("bookmarks", {})
     def _load_settings(self):
         settings = QSettings(APP_AUTHOR, APP_NAMESHORT)
         geometry = settings.value("geometry")
@@ -428,7 +419,10 @@ class FileManagerVibeAgain(QMainWindow):
         else: self.setGeometry(0, 0, 1400, 800); self.center_window()
         layout_id = settings.value("layout_id", 1, type=int)
         pane_paths = settings.value("pane_paths", [], type=list)
-        self.set_layout(layout_id, initial_paths=pane_paths) # Creates panes and navigates them
+        self.set_layout(layout_id)
+        for i, pane in enumerate(self.panes):
+            if i < len(pane_paths) and os.path.exists(pane_paths[i]):
+                pane.navigate_to(pane_paths[i])
     def center_window(self):
         screen_geometry = self.screen().availableGeometry(); center_point = screen_geometry.center()
         self.move(center_point.x() - self.width() // 2, center_point.y() - self.height() // 2)
@@ -462,8 +456,10 @@ class FileManagerVibeAgain(QMainWindow):
         fields_action.triggered.connect(self._open_fields_dialog)
         view_menu.addAction(fields_action)
         view_menu.addSeparator()
+        
         self.layout_action_group = QActionGroup(self)
         self.layout_action_group.setExclusive(True)
+        
         layouts = {"1 Vertical Pane": 1, "2 Vertical Panes": 2, "3 Vertical Panes": 3, "2 Vertical with Properties Pane": 21, "3 Panes (1 Left, 2 Right)": 31, "3 Panes (2 Left, 1 Right)": 32, "4 Vertical Panes": 41, "4 Panes (2x2 Grid)": 42}
         for text, layout_id in layouts.items():
             action = QAction(text, self, checkable=True)
@@ -487,6 +483,7 @@ class FileManagerVibeAgain(QMainWindow):
             self.field_profiles = dialog.get_profiles_for_saving()
             for pane in self.panes: pane.update_profiles()
     def change_layout(self, layout_id):
+        self.current_layout_id = layout_id
         current_geometry = self.geometry()
         self.set_layout(layout_id)
         self.setGeometry(current_geometry)
@@ -501,6 +498,7 @@ class FileManagerVibeAgain(QMainWindow):
             self.panes.append(pane)
             pane.focus_gained.connect(self._set_active_pane)
             return pane
+            
         if layout_id == 1: self.current_layout_widget = create_pane()
         elif layout_id == 2: splitter = QSplitter(Qt.Orientation.Horizontal); splitter.addWidget(create_pane()); splitter.addWidget(create_pane()); self.current_layout_widget = splitter
         elif layout_id == 3: splitter = QSplitter(Qt.Orientation.Horizontal); splitter.addWidget(create_pane()); splitter.addWidget(create_pane()); splitter.addWidget(create_pane()); self.current_layout_widget = splitter
