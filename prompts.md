@@ -1,10 +1,19 @@
+* We are creating a Python coded File Manager for Windows
 * Use PyQt so we can have drag and drop to another application
-* Name it File Manager Vibe Again
+* Name it File Manager Vibe
+* Comments at Top:
+* # File Manager Vibe
+* # Copyright 2025 Mark A. Stout
+* # Licensed under MIT License
+* Variables near start :
+   APP_NAME = "File Manager Vibe"
+   APP_COPYRIGHT = "Copyright 2025 Mark A. Stout"
+   APP_SHORT_NAME = "FileMgrVibe"
 * Resizable window
-* File, Edit and View menus
+* File, Edit, View and Bookmarks menus
 * Starts in center of screen
 * The option to have 1,2,3, or 4 windows
-* Options for layout of the up to 4 windows and a 5th pane for bookmarks.
+* Options for layout of the up to 4 windows
 * For 4 windows : 2 top & bottom on left, 2 top and bottom for right
 * For 4 windows, 4 vertical
 * For 3 windows, 2 top & bottom left, one vertical on right
@@ -15,6 +24,17 @@
 * For 1 window, 1 vertical
 * The application window must remain constant when changing number or layout of views
 * Also under the View menu, Narrow (showing only filename), Detailed (showing filename, date modified and size), and Images (3 tiles per line in pane displaying the image if the file is a displayable image)
+
+* For testing, make these defaults on loading 
+   Pane 1 : Documents
+   Pane 2 : Downloads
+   Pane 3 : Pictures
+   Pane 4 : Videos
+* Put those also in Bookmarks
+
+
+left off 2025-09-10 16:58:41
+
 ===============================================================================
 * Undo/Redo
 * Edit menu with undo/redo
