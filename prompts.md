@@ -1,3 +1,5 @@
+# this is version 4 of File Manager Vibe
+
 * We are creating a Python coded File Manager for Windows
 * Use PyQt so we can have drag and drop to another application
 * Name it File Manager Vibe
@@ -39,16 +41,17 @@ left off 2025-09-10 16:58:41
 * Undo/Redo
 * Edit menu with undo/redo
 * Add a menu item, Fields to View menu. Have a dialog box with a panel on left listing all the explorer fields grouped by type (general, image, audio, video).  Have a middle panel “Display” and a right hand one “Properties”  You can drag & drop from left to both middle and right.  Below panel 2 & 3, is a delete button.  Below that center, is a drop down labeled Profile. It is populated with “Default” and “Add New” Add new invokes a dialog box asking for the name of the Profile.
-===============================================================================
-* for now, hard code the files for each pane to "C:\Users\marks\OneDrive\Pictures" and display those file depending on what view is set.
+(at this point it lost the bookmarks I just put in)
+they are back
+
+* Images was in the view menu so : Flesh out View Images. Display tiles 3 or 4 across. If file is a displayable image, display it in the tile.
+* got the huffman error so debugging around that
 ===============================================================================
 * Changing a view should only affect the active pane.
 * Show some indicator which is the active pane.
 * For Detail view, use the fields in the current Field Profile
 ===============================================================================
-*Note : It created the fields dialog based on previous code.*
-
-Left off here 2025-09-09 17:09:19 472 lines of code
+Need a up button to move out of folder and up one level
 ===============================================================================
 * Drag and drop between windows
 * Drag and Drop to another application like Gmail
